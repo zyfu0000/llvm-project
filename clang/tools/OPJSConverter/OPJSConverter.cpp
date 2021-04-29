@@ -586,7 +586,7 @@ public:
     
     // - (void)xxx{}
     bool VisitObjCMethodDecl(const ObjCMethodDecl *methodDecl){
-        OPCheckInvalid(methodDecl)
+//        OPCheckInvalid(methodDecl)
         
         // annotation 标注 patch 版本
         if (methodDecl->hasAttr<AnnotateAttr>()) {
@@ -599,7 +599,7 @@ public:
             return false;
         }
         
-        //1. 获取返回类型
+        // 获取返回类型
         QualType qualType = methodDecl->getReturnType();
         if (qualType.isNull()) {
             return false;
@@ -610,34 +610,19 @@ public:
         }
         
         currentContext = new OPMethodDeclContext;
-        currentContext->m_names.push_back(methodDecl->getClassInterface()->getNameAsString());
-        currentContext->m_names.push_back(methodDecl->getNameAsString());
+        currentContext->m_className = methodDecl->getClassInterface()->getNameAsString();
+        currentContext->m_methodName = methodDecl->getNameAsString();
         contexts.push_back(currentContext);
         lastContext = currentContext;
-        
-        //2. 获取type的开始和结束位置，注：当methodDecl是隐式实现的，methodDecl->getReturnTypeSourceInfo()->getTypeLoc() 为NULL
-        SourceLocation typeBeginLoc = typeSourceInfo->getTypeLoc().getBeginLoc();
-        SourceLocation typeEndLoc = typeSourceInfo->getTypeLoc().getEndLoc();
-        //3. 递归处理返回类型
-        bool handleReturnTypeSuccess = recursiveHandleQualType(typeBeginLoc, typeEndLoc, qualType);
-        //4. 获取参数列表
+
+        // 获取参数列表
         ArrayRef<ParmVarDecl*> params = methodDecl->parameters();
-        bool handleParamersTypeSuccess = false;
-        //5. 遍历参数列表
+        // 遍历参数列表
         for(ArrayRef< ParmVarDecl * >::iterator i = params.begin(), e = params.end(); i != e; i++){
             ParmVarDecl *p = *i;
-            //6. 获取参数的类型
-            QualType type = p->getType();
-            //7. 递归处理参数类型
-            handleParamersTypeSuccess = handleParamersTypeSuccess || recursiveHandleQualType(p->getBeginLoc(), p->getEndLoc(), type);
+            string name = p->getQualifiedNameAsString();
+            currentContext->m_params.push_back(name);
         }
-        
-        if (handleReturnTypeSuccess || handleParamersTypeSuccess) {
-            //-1 是去掉左花括号"{"
-//            string rewriteString = rewriter.getRewrittenText(SourceRange(methodDecl->getBeginLoc(), methodDecl->getDeclaratorEndLoc().getLocWithOffset(-1)));
-//            cout << "方法声明/定义：" << getMethodDeclStringOfMethoddecl(methodDecl) << "替换为："<< rewriteString<< endl;
-        }
-        
         
         return true;
     }
@@ -677,17 +662,19 @@ public:
     bool VisitFunctionDecl(FunctionDecl *functionDecl)
     {
         //ParmVarDecl
+        
+        return true;
     }
     
     // a()
     bool VisitCallExpr(CallExpr *callExpt)
     {
-        
+        return true;
     }
     
     bool VisitDeclRefExpr(DeclRefExpr *declExpt)
     {
-        
+        return true;
     }
     
     // 345
@@ -709,25 +696,27 @@ public:
     // 4.56
     bool VisitFloatingLiteral(FloatingLiteral *literal)
     {
-        
+        return true;
     }
     
     // "xxx"
-    bool VisitStringLiteral(llvm::StringLiteral *literal)
+    bool VisitStringLiteral(clang::StringLiteral *literal)
     {
-        
+        return true;
     }
     
     // @""
     bool VisitObjCStringLiteral(ObjCStringLiteral *literal)
     {
-        
+        return true;
     }
     
     // struct AA
     bool VisitRecordDecl(RecordDecl *decl)
     {
         // FieldDecl
+        
+        return true;
     }
     
     
@@ -753,59 +742,6 @@ public:
         SourceLocation spellingLoc = compilerInstance->getSourceManager().getSpellingLoc(node->getSourceRange().getBegin());
         string filePath = compilerInstance->getSourceManager().getFilename(spellingLoc).str();
         return filePath;
-    }
-    
-    //递归处理, ture 表示处理成功，false 表示失败，或者无需处理
-    bool recursiveHandleQualType(SourceLocation start , SourceLocation end,  QualType type) {
-        
-        if (start.isInvalid() || end.isInvalid() ) {
-            return  false;
-        }
-        
-        bool success = false;
-        SourceLocation slideLoc = start;
-        if (isa<ObjCObjectPointerType>(type)) { //ObjCObjectPointerType类型
-            const ObjCObjectPointerType *pointerType = type->getAs<ObjCObjectPointerType>(); //指针类型
-            const ObjCInterfaceDecl *IDecl = pointerType->getInterfaceDecl();
-//            if (isUserSourceDecl(IDecl) && isNeedObfuscateClassName(IDecl->getNameAsString())) { //是用户源码,并且类名是
-//                string oldClassName = IDecl->getNameAsString();
-//                string newClassName = getNewClassName(oldClassName);
-//                //获取类型声明的字符数据的开始指针
-//                const char* startBuffer = compilerInstance->getSourceManager().getCharacterData(slideLoc);
-//                //获取类型声明的字符数据的结束指针
-//                const char* endBuffer = compilerInstance->getSourceManager().getCharacterData(end);
-//                //两个指针的偏移量
-//                int offset = endBuffer - startBuffer;
-//                //获取雷声声明的字符窜 例如:NSSArray <DemoViewController *>
-//                string originTypeDefineStr(startBuffer, offset);
-//
-//                //查找该字符串中包含oldClassName 字符串的位置
-//                int index = originTypeDefineStr.find(oldClassName, 0);
-//
-//                slideLoc =slideLoc .getLocWithOffset(index);
-//                ReplaceText(slideLoc, oldClassName.length(), newClassName);
-//                slideLoc = slideLoc.getLocWithOffset(index+oldClassName.length());
-//                success = true;
-            }
-            
-//            if (pointerType->isSpecialized()) { //有类型参数
-//                const ArrayRef< QualType > params = pointerType->getTypeArgs();
-//                unsigned index = 0;
-//                for(ArrayRef< QualType >::iterator i = params.begin(), e = params.end(); i != e; i++,index++){
-//                    QualType t = *i;
-//                    success =  recursiveHandleQualType(slideLoc, end, t) || success;
-//                }
-//            }
-//        }else if(isa<ObjCObjectType>(type)) {
-            //与ObjCObjectPointerType 处理方式一致，省略...
-            
-//        }
-//        else if(isa<AttributedType>(type)){
-//            const AttributedType *attributedType = type->getAs<AttributedType>(); //指针类型
-//            success = recursiveHandleQualType(slideLoc, end, attributedType->getModifiedType());
-//        }
-        
-        return success;
     }
     
     string script() {

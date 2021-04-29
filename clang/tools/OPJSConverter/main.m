@@ -1,24 +1,24 @@
 #import <Foundation/NSObjCRuntime.h>
 
-extern void cfun(int, double);
+// extern void cfun(int, double);
 
-struct AAA {
-	int a;
-};
+// typedef struct AAA {
+// 	int a;
+// } AAA;
 
-struct BBB {
-	AAA aaa;
-	int *btn;
-};
+// typedef struct BBB {
+// 	AAA aaa;
+// 	int *btn;
+// } BBB;
 
 @implementation FCKViewController
 
-- (void)a:(CGRect)c
+- (void)a:(int)ccccc
 {}
 
 - (void)b __attribute__((annotate("reflect-class")))
 {
-	CGRect frame = CGRectMake(1,1,1,1);
+	// CGRect frame = CGRectMake(1,1,1,1);
 
 	// id inst = self;
 	// [inst a:34534546758678678];

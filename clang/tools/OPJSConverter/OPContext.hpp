@@ -45,17 +45,15 @@ public:
 
 class OPMethodDeclContext: public OPContext {
 public:
-    vector<string> m_names;
+    string m_className;
+    string m_methodName;
     vector<string> m_params;
     
     string parse() {
         string script = "fixMethod(";
         
-        string className = m_names[0];
-        string selName = m_names[1];
-        
-        script = script + "'" + className + "',";
-        script = script + "'" + selName + "',";
+        script = script + "'" + m_className + "',";
+        script = script + "'" + m_methodName + "',";
         script += "false,";
         script += "function (self, sel";
         if (m_params.size() > 0) {
