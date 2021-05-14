@@ -3,15 +3,13 @@ set(LLVM_LINK_COMPONENTS
   )
 
 #对应的cpp文件都要加进来
-add_clang_executable(OPJSConverter
-  OPJSConverter.cpp 
-  OPContext.cpp
-  OPContext.hpp
+add_clang_executable(FCKPrefix
+  FCKPrefix.cpp 
 )
 
-# 将目标文件与库文件进行链接
-target_link_libraries(OPJSConverter
-	PRIVATE
+# 后面会使用到这些库
+target_link_libraries(FCKPrefix
+    PRIVATE
     clangAST
     clangBasic
     clangDriver

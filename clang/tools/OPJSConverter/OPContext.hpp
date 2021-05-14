@@ -43,6 +43,7 @@ public:
     }
 };
 
+// - (void)xxx{}
 class OPMethodDeclContext: public OPContext {
 public:
     string m_className;
@@ -76,7 +77,7 @@ public:
     }
 };
 
-
+// [self a]
 class OPMessageExprContext: public OPContext {
 public:
     bool m_isStatic;
@@ -122,6 +123,7 @@ public:
     }
 };
 
+// 345
 class OPIntegerLiteralContext: public OPContext {
 public:
     int64_t value;
@@ -130,6 +132,58 @@ public:
         string script = ",";
         
         script += std::to_string(value);
+        
+        return script;
+    }
+};
+
+// 3.45
+class OPFloatingLiteralContext: public OPContext {
+public:
+    float value;
+    
+    string parse() {
+        string script = ",";
+        
+        script += std::to_string(value);
+        
+        return script;
+    }
+};
+
+// a()
+class OPCallExprContext: public OPContext {
+public:
+    string m_funcName;
+    vector<OPParam> m_fixParams;
+    vector<OPParam> m_varParams;
+    string returnType;
+    
+    string parse() {
+        string script = "callCFunction('";
+
+        script += m_funcName;
+        script += "',";
+        
+        if (m_fixParams.size() > 0) {
+            for (vector<OPParam>::iterator itr = m_params.begin(); itr != m_params.end(); itr++) {
+                script += ",";
+                OPParam param = *itr;
+                //                script += param.value;
+            }
+            
+            
+            OPContext *nextCtx = m_next;
+            while (nextCtx) {
+                script += nextCtx->parse();
+                nextCtx = nextCtx->m_next;
+            }
+        }
+        
+        script += "'";
+        script += returnType;
+        script += "'";
+        script += ");";
         
         return script;
     }
