@@ -16,7 +16,7 @@ using namespace std;
 class OPParam
 {
 public:
-    char type;
+    char *type;
     void *value;
 };
 
@@ -40,6 +40,29 @@ public:
     
     virtual string parse() {
         return "";
+    }
+};
+
+// @implementation xx
+class OPImplementationDeclContext: public OPContext {
+public:
+    string m_className;
+    
+    string parse() {
+        string script = "class ";
+        
+        script = script + m_className + "{";
+        
+        
+        OPContext *nextCtx = m_next;
+        if (nextCtx) {
+            script += nextCtx->parse();
+            //            nextCtx = nextCtx->m_next;
+        }
+        
+        script += "} \n";
+        
+        return script;
     }
 };
 

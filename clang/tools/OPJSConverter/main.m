@@ -18,6 +18,8 @@
 
 - (void)b __attribute__((annotate("reflect-class")))
 {
+    id view = [[NSObject alloc]init];
+
 	// CGRect frame = CGRectMake(1,1,1,1);
 
 	// id inst = self;

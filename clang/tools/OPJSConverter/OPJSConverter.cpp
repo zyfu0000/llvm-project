@@ -31,8 +31,18 @@ class OPASTVisitor : public RecursiveASTVisitor<OPASTVisitor>
 public:
     explicit OPASTVisitor(CompilerInstance *aCI) : compilerInstance(aCI) {}
     
+    // @implementation xx
+    bool VisitObjCImplementationDecl(const ObjCImplementationDecl *implDecl)
+    {
+        OPCheckInvalid(implDecl)
+        
+        OPImplementationDeclContext *context = new OPImplementationDeclContext;
+        context->m_className = implDecl->getNameAsString();
+    }
+    
     // - (void)xxx{}
-    bool VisitObjCMethodDecl(const ObjCMethodDecl *methodDecl){
+    bool VisitObjCMethodDecl(const ObjCMethodDecl *methodDecl)
+    {
         OPCheckInvalid(methodDecl)
         
         // annotation 标注 patch 版本
@@ -168,7 +178,7 @@ public:
         return true;
     }
     
-    // struct AA
+    // class/union/struct AA
     bool VisitRecordDecl(RecordDecl *decl)
     {
         // FieldDecl
@@ -214,7 +224,7 @@ public:
 private:
     CompilerInstance *compilerInstance;
 
-    vector<OPMethodDeclContext *> contexts;
+    vector<OPImplementationDeclContext *> classContexts;
     OPMethodDeclContext *currentContext = NULL;
     OPContext *lastContext = NULL;
 };
