@@ -29,7 +29,7 @@ static cl::OptionCategory OPOptionCategory("OPOptionCategory");
 class OPASTVisitor : public RecursiveASTVisitor<OPASTVisitor>
 {
 public:
-    explicit OPASTVisitor(CompilerInstance *aCI) : compilerInstance(aCI) {}
+    explicit OPASTVisitor(CompilerInstance *aCI) : m_compilerInstance(aCI) {}
     
     // @implementation xx
     bool VisitObjCImplementationDecl(const ObjCImplementationDecl *implDecl)
@@ -38,6 +38,9 @@ public:
         
         OPImplementationDeclContext *context = new OPImplementationDeclContext;
         context->m_className = implDecl->getNameAsString();
+        m_classContexts.push_back(context);
+        
+        m_currentImplContext = context;
     }
     
     // - (void)xxx{}
@@ -66,19 +69,19 @@ public:
             return false;
         }
         
-        currentContext = new OPMethodDeclContext;
-        currentContext->m_className = methodDecl->getClassInterface()->getNameAsString();
-        currentContext->m_methodName = methodDecl->getNameAsString();
-        contexts.push_back(currentContext);
-        lastContext = currentContext;
+        OPMethodDeclContext *context = new OPMethodDeclContext;
+        context->m_className = methodDecl->getClassInterface()->getNameAsString();
+        context->m_methodName = methodDecl->getNameAsString();
+        m_currentImplContext->m_classContexts.push_back(context);
+        m_currentMethodContext = context;
 
         // 获取参数列表
         ArrayRef<ParmVarDecl*> params = methodDecl->parameters();
         // 遍历参数列表
-        for(ArrayRef< ParmVarDecl * >::iterator i = params.begin(), e = params.end(); i != e; i++){
+        for (ArrayRef<ParmVarDecl *>::iterator i = params.begin(), e = params.end(); i != e; i++) {
             ParmVarDecl *p = *i;
             string name = p->getQualifiedNameAsString();
-            currentContext->m_params.push_back(name);
+            context->m_params.push_back(name);
         }
         
         return true;
@@ -106,10 +109,6 @@ public:
         for (uint16_t i = 0; i < argsNum; ++i) {
             const Expr *arg = messageExpr->getArg(i);
             arg->getType();
-        }
-        if (lastContext) {
-            lastContext->setNext(context);
-            lastContext = context;
         }
         
         return true;
@@ -142,10 +141,10 @@ public:
         OPIntegerLiteralContext *context = new OPIntegerLiteralContext;
         context->value = literal->getValue().getLimitedValue();
         
-        if (lastContext) {
-            lastContext->setNext(context);
-            lastContext = context;
-        }
+//        if (lastContext) {
+//            lastContext->setNext(context);
+//            lastContext = context;
+//        }
         
         return true;
     }
@@ -158,10 +157,10 @@ public:
         OPFloatingLiteralContext *context = new OPFloatingLiteralContext;
         context->value = literal->getValue().convertToFloat();
         
-        if (lastContext) {
-            lastContext->setNext(context);
-            lastContext = context;
-        }
+//        if (lastContext) {
+//            lastContext->setNext(context);
+//            lastContext = context;
+//        }
         
         return true;
     }
@@ -206,15 +205,15 @@ public:
     string sourcePathNode(const Node node ) {
         if(!node)return "";
         
-        SourceLocation spellingLoc = compilerInstance->getSourceManager().getSpellingLoc(node->getSourceRange().getBegin());
-        string filePath = compilerInstance->getSourceManager().getFilename(spellingLoc).str();
+        SourceLocation spellingLoc = m_compilerInstance->getSourceManager().getSpellingLoc(node->getSourceRange().getBegin());
+        string filePath = m_compilerInstance->getSourceManager().getFilename(spellingLoc).str();
         return filePath;
     }
     
     string script() {
         string text;
-        for(vector<OPMethodDeclContext *>::iterator i = contexts.begin(), e = contexts.end(); i != e; i++){
-            OPMethodDeclContext *p = *i;
+        for (vector<OPImplementationDeclContext *>::iterator i = m_classContexts.begin(), e = m_classContexts.end(); i != e; i++) {
+            OPImplementationDeclContext *p = *i;
             
             text += p->parse();
         }
@@ -222,11 +221,11 @@ public:
         return text;
     }
 private:
-    CompilerInstance *compilerInstance;
+    CompilerInstance *m_compilerInstance;
 
-    vector<OPImplementationDeclContext *> classContexts;
-    OPMethodDeclContext *currentContext = NULL;
-    OPContext *lastContext = NULL;
+    vector<OPImplementationDeclContext *> m_classContexts;
+    OPImplementationDeclContext *m_currentImplContext = NULL;
+    OPMethodDeclContext *m_currentMethodContext = NULL;
 };
 
 //AST 构造器

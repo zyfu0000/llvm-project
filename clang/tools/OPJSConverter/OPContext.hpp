@@ -43,29 +43,6 @@ public:
     }
 };
 
-// @implementation xx
-class OPImplementationDeclContext: public OPContext {
-public:
-    string m_className;
-    
-    string parse() {
-        string script = "class ";
-        
-        script = script + m_className + "{";
-        
-        
-        OPContext *nextCtx = m_next;
-        if (nextCtx) {
-            script += nextCtx->parse();
-            //            nextCtx = nextCtx->m_next;
-        }
-        
-        script += "} \n";
-        
-        return script;
-    }
-};
-
 // - (void)xxx{}
 class OPMethodDeclContext: public OPContext {
 public:
@@ -95,6 +72,30 @@ public:
         }
         
         script += "}); \n";
+        
+        return script;
+    }
+};
+
+// @implementation xx
+class OPImplementationDeclContext: public OPContext {
+public:
+    string m_className;
+    vector<OPMethodDeclContext *> m_methodContexts;
+    
+    string parse() {
+        string script = "class ";
+        
+        script = script + m_className + "{ \n";
+        
+        for (vector<OPMethodDeclContext *>::iterator i = m_methodContexts.begin(), e = m_methodContexts.end(); i != e; i++) {
+            OPMethodDeclContext *p = *i;
+            
+            script += p->parse();
+            script += "\n";
+        }
+        
+        script += "} \n";
         
         return script;
     }
@@ -189,7 +190,7 @@ public:
         script += "',";
         
         if (m_fixParams.size() > 0) {
-            for (vector<OPParam>::iterator itr = m_params.begin(); itr != m_params.end(); itr++) {
+            for (vector<OPParam>::iterator itr = m_varParams.begin(); itr != m_varParams.end(); itr++) {
                 script += ",";
                 OPParam param = *itr;
                 //                script += param.value;
