@@ -13,12 +13,14 @@
 
 @implementation FCKViewController
 
-- (void)a:(int)ccccc
+- (void)a:(int)ccccc b:(int)dddd
 {}
 
 - (void)b __attribute__((annotate("reflect-class")))
 {
-    id view = [[NSObject alloc]init];
+    // id view = [[NSObject alloc] init];
+
+    [[NSObject alloc] init];
 
 	// CGRect frame = CGRectMake(1,1,1,1);
 

@@ -44,34 +44,38 @@ public:
 };
 
 // - (void)xxx{}
+// + (void)xxx{}
 class OPMethodDeclContext: public OPContext {
 public:
     string m_className;
     string m_methodName;
+    bool m_isClassMethod;
     vector<string> m_params;
     
     string parse() {
-        string script = "fixMethod(";
+        string script = "";
+        if (m_isClassMethod) {
+            script += "static ";
+        }
         
-        script = script + "'" + m_className + "',";
-        script = script + "'" + m_methodName + "',";
-        script += "false,";
-        script += "function (self, sel";
+        script += m_methodName + " (";
         if (m_params.size() > 0) {
             for (vector<string>::iterator itr = m_params.begin(); itr != m_params.end(); itr++) {
-                script += ",";
                 script += *itr;
+                if (itr != m_params.end() - 1) {
+                    script += ", ";
+                }
             }
         }
-        script += "){ \n";
+        script += ") { \n";
         
         OPContext *nextCtx = m_next;
-        if (nextCtx) {
+        while (nextCtx) {
             script += nextCtx->parse();
-//            nextCtx = nextCtx->m_next;
+            nextCtx = nextCtx->m_next;
         }
         
-        script += "}); \n";
+        script += "} \n";
         
         return script;
     }
@@ -86,7 +90,7 @@ public:
     string parse() {
         string script = "class ";
         
-        script = script + m_className + "{ \n";
+        script = script + m_className + " { \n";
         
         for (vector<OPMethodDeclContext *>::iterator i = m_methodContexts.begin(), e = m_methodContexts.end(); i != e; i++) {
             OPMethodDeclContext *p = *i;
@@ -101,19 +105,29 @@ public:
     }
 };
 
+class OPVarDeclContext: public OPContext {
+public:
+    string m_varName;
+    
+    string parse() {
+        string script = "var " + m_varName + " = ";
+        
+        return script;
+    }
+};
+
 // [self a]
 class OPMessageExprContext: public OPContext {
 public:
-    bool m_isStatic;
+    bool m_isClassMethod;
     string m_classOrInstanceName;
     string m_selName;
     vector<OPParam> m_params;
-//    returnType;
     
     string parse() {
         string script = "";
         
-        if (m_isStatic) {
+        if (m_isClassMethod) {
             script += "callClassMethod('";
             script += m_classOrInstanceName;
             script += "',";
@@ -153,7 +167,7 @@ public:
     int64_t value;
     
     string parse() {
-        string script = ",";
+        string script = "";
         
         script += std::to_string(value);
         

@@ -9,6 +9,7 @@
 #include <iostream>
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "OPContext.hpp"
+#include <regex>
 
 using namespace std;
 using namespace llvm;
@@ -41,6 +42,8 @@ public:
         m_classContexts.push_back(context);
         
         m_currentImplContext = context;
+        
+        return true;
     }
     
     // - (void)xxx{}
@@ -71,9 +74,12 @@ public:
         
         OPMethodDeclContext *context = new OPMethodDeclContext;
         context->m_className = methodDecl->getClassInterface()->getNameAsString();
-        context->m_methodName = methodDecl->getNameAsString();
-        m_currentImplContext->m_classContexts.push_back(context);
-        m_currentMethodContext = context;
+        std::string methodName = methodDecl->getNameAsString();
+        convertToOPJSMethod(methodName);
+        context->m_methodName = methodName;
+        context->m_isClassMethod = methodDecl->isClassMethod();
+        m_currentImplContext->m_methodContexts.push_back(context);
+        m_currentContext = context;
 
         // 获取参数列表
         ArrayRef<ParmVarDecl*> params = methodDecl->parameters();
@@ -87,13 +93,43 @@ public:
         return true;
     }
     
+    void convertToOPJSMethod(std::string &methodName)
+    {
+        if (methodName.back() == ':') {
+            methodName.pop_back();
+        }
+        methodName = std::regex_replace(methodName, std::regex("_"), "__");
+        methodName = std::regex_replace(methodName, std::regex(":"), "_");
+    }
+    
+    bool VisitVarDecl(VarDecl *varDecl)
+    {
+        OPCheckInvalid(varDecl)
+
+        if (!m_currentContext) {
+            return true;
+        }
+        
+        if (!varDecl->isLocalVarDecl()) {
+            return true;
+        }
+
+        OPVarDeclContext *context = new OPVarDeclContext;
+        context->m_varName = varDecl->getNameAsString();
+
+        m_currentContext->m_next = context;
+        m_currentContext = context;
+
+        return true;
+    }
+    
     // [self a]
     bool VisitObjCMessageExpr(ObjCMessageExpr* messageExpr)
     {
         OPCheckInvalid(messageExpr)
         
         OPMessageExprContext *context = new OPMessageExprContext;
-        context->m_isStatic = messageExpr->isClassMessage();
+        context->m_isClassMethod = messageExpr->isClassMessage();
         
         const ObjCInterfaceDecl *objcInterfaceDecl = messageExpr->getReceiverInterface();
         if (isUserSourceDecl(objcInterfaceDecl)) {
@@ -138,13 +174,15 @@ public:
     {
         OPCheckInvalid(literal)
         
+        if (!m_currentContext) {
+            return true;
+        }
+        
         OPIntegerLiteralContext *context = new OPIntegerLiteralContext;
         context->value = literal->getValue().getLimitedValue();
         
-//        if (lastContext) {
-//            lastContext->setNext(context);
-//            lastContext = context;
-//        }
+        m_currentContext->setNext(context);
+        m_currentContext = context;
         
         return true;
     }
@@ -225,7 +263,7 @@ private:
 
     vector<OPImplementationDeclContext *> m_classContexts;
     OPImplementationDeclContext *m_currentImplContext = NULL;
-    OPMethodDeclContext *m_currentMethodContext = NULL;
+    OPContext *m_currentContext = NULL;
 };
 
 //AST 构造器
