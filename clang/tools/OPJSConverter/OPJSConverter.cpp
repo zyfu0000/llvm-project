@@ -10,6 +10,7 @@
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "OPContext.hpp"
 #include <regex>
+#include <typeinfo>
 
 using namespace std;
 using namespace llvm;
@@ -22,7 +23,7 @@ return;\
 }
 
 #define OPCheckInvalid(x) if (x->getBeginLoc().isInvalid() || x->getEndLoc().isInvalid()) { \
-return false;\
+return true;\
 }
 
 static cl::OptionCategory OPOptionCategory("OPOptionCategory");
@@ -72,6 +73,10 @@ public:
             return false;
         }
         
+        if (!m_currentImplContext) {
+            return true;
+        }
+        
         OPMethodDeclContext *context = new OPMethodDeclContext;
         context->m_className = methodDecl->getClassInterface()->getNameAsString();
         std::string methodName = methodDecl->getNameAsString();
@@ -91,15 +96,6 @@ public:
         }
         
         return true;
-    }
-    
-    void convertToOPJSMethod(std::string &methodName)
-    {
-        if (methodName.back() == ':') {
-            methodName.pop_back();
-        }
-        methodName = std::regex_replace(methodName, std::regex("_"), "__");
-        methodName = std::regex_replace(methodName, std::regex(":"), "_");
     }
     
     bool VisitVarDecl(VarDecl *varDecl)
@@ -128,25 +124,58 @@ public:
     {
         OPCheckInvalid(messageExpr)
         
-        OPMessageExprContext *context = new OPMessageExprContext;
-        context->m_isClassMethod = messageExpr->isClassMessage();
-        
-        const ObjCInterfaceDecl *objcInterfaceDecl = messageExpr->getReceiverInterface();
-        if (isUserSourceDecl(objcInterfaceDecl)) {
-            string oldClassName = objcInterfaceDecl->getNameAsString();
-            context->m_classOrInstanceName = oldClassName;
-            context->m_selName = messageExpr->getSelector().getAsString();
-            
-            
-            // SourceLocation loc = messageExpr->getClassReceiverTypeInfo()->getTypeLoc().getBeginLoc();
+        if (!m_currentContext) {
+            return true;
         }
         
-        uint16_t argsNum = messageExpr->getNumArgs();
-        for (uint16_t i = 0; i < argsNum; ++i) {
-            const Expr *arg = messageExpr->getArg(i);
-            arg->getType();
+        if (std::find(m_parsedExpr.begin(), m_parsedExpr.end(), messageExpr) != m_parsedExpr.end()) {
+            return true;
         }
         
+        OPMessageExprContext *context = (OPMessageExprContext *)convertExprToOpContext(messageExpr);
+        
+        m_currentContext->m_next = context;
+        m_currentContext = context;
+        
+        return true;
+    }
+    
+    OPContext *convertExprToOpContext(Expr *expr)
+    {
+        if (isa<ObjCMessageExpr>(expr)) {
+            OPMessageExprContext *context = new OPMessageExprContext;
+            ObjCMessageExpr *messageExpr = (ObjCMessageExpr *)expr;
+            if (messageExpr->isClassMessage()) {
+                context->m_isClassMethod = messageExpr->isClassMessage();
+                
+                const ObjCInterfaceDecl *objcInterfaceDecl = messageExpr->getReceiverInterface();
+                string className = objcInterfaceDecl->getNameAsString();
+                context->m_className = className;
+            } else {
+                Expr *receiverExpr = messageExpr->getInstanceReceiver();
+                context->m_receiverContext = convertExprToOpContext(receiverExpr);
+                
+                m_parsedExpr.push_back(receiverExpr);
+            }
+            std::string selName = messageExpr->getSelector().getAsString();
+            convertToOPJSMethod(selName);
+            context->m_selName = selName;
+
+            uint16_t argsNum = messageExpr->getNumArgs();
+            for (uint16_t i = 0; i < argsNum; ++i) {
+                const Expr *arg = messageExpr->getArg(i);
+                arg->getType();
+            }
+            
+            return context;
+        }
+        else {
+            
+        }
+    }
+    
+    bool VisitObjCSelectorExpr(ObjCSelectorExpr *expr)
+    {
         return true;
     }
     
@@ -192,13 +221,15 @@ public:
     {
         OPCheckInvalid(literal)
         
+        if (!m_currentContext) {
+            return true;
+        }
+        
         OPFloatingLiteralContext *context = new OPFloatingLiteralContext;
         context->value = literal->getValue().convertToFloat();
         
-//        if (lastContext) {
-//            lastContext->setNext(context);
-//            lastContext = context;
-//        }
+        m_currentContext->setNext(context);
+        m_currentContext = context;
         
         return true;
     }
@@ -223,6 +254,14 @@ public:
         return true;
     }
     
+    void convertToOPJSMethod(std::string &methodName)
+    {
+        if (methodName.back() == ':') {
+            methodName.pop_back();
+        }
+        methodName = std::regex_replace(methodName, std::regex("_"), "__");
+        methodName = std::regex_replace(methodName, std::regex(":"), "_");
+    }
     
     
     //判断是否用户源码，过滤掉系统源码
@@ -264,6 +303,8 @@ private:
     vector<OPImplementationDeclContext *> m_classContexts;
     OPImplementationDeclContext *m_currentImplContext = NULL;
     OPContext *m_currentContext = NULL;
+    
+    vector<Expr *> m_parsedExpr;
 };
 
 //AST 构造器

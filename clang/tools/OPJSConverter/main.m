@@ -1,4 +1,5 @@
 #import <Foundation/NSObjCRuntime.h>
+#import <Foundation/Foundation.h>
 
 // extern void cfun(int, double);
 

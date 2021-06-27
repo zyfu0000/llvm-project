@@ -75,7 +75,7 @@ public:
             nextCtx = nextCtx->m_next;
         }
         
-        script += "} \n";
+        script += "\n} \n";
         
         return script;
     }
@@ -99,7 +99,7 @@ public:
             script += "\n";
         }
         
-        script += "} \n";
+        script += "\n} \n";
         
         return script;
     }
@@ -108,9 +108,14 @@ public:
 class OPVarDeclContext: public OPContext {
 public:
     string m_varName;
+    OPContext *m_initContext;
     
     string parse() {
         string script = "var " + m_varName + " = ";
+        if (m_initContext) {
+            script += m_initContext->parse();
+        }
+        script += ';';
         
         return script;
     }
@@ -119,26 +124,34 @@ public:
 // [self a]
 class OPMessageExprContext: public OPContext {
 public:
-    bool m_isClassMethod;
-    string m_classOrInstanceName;
+    bool m_isClassMethod = false;
+    string m_className;
     string m_selName;
     vector<OPParam> m_params;
+    string m_receiverName;
+    OPContext *m_receiverContext = NULL;
     
     string parse() {
         string script = "";
         
-        if (m_isClassMethod) {
-            script += "callClassMethod('";
-            script += m_classOrInstanceName;
-            script += "',";
-        } else {
-            script += "callInstanceMethod(";
-            script += m_classOrInstanceName;
-            script += ",";
+        if (m_receiverContext) {
+            script += m_receiverContext->parse();
+            script += ".";
         }
-        script += "'";
+        
+        if (m_isClassMethod) {
+            script += "require('";
+            script += m_className;
+            script += "').";
+        } else {
+            if (m_receiverName.length() != 0) {
+                script += m_receiverName;
+                script += ".";
+            }
+        }
+        
         script += m_selName;
-        script += "'";
+        script += "(";
         
         if (m_params.size() > 0) {
             for (vector<OPParam>::iterator itr = m_params.begin(); itr != m_params.end(); itr++) {
@@ -148,14 +161,7 @@ public:
             }
         }
         
-        
-        OPContext *nextCtx = m_next;
-        while (nextCtx) {
-            script += nextCtx->parse();
-            nextCtx = nextCtx->m_next;
-        }
-        
-        script += ");";
+        script += ")";
         
         return script;
     }
