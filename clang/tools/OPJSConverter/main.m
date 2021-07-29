@@ -19,9 +19,30 @@
 
 - (void)b __attribute__((annotate("reflect-class")))
 {
-    // id view = [[NSObject alloc] init];
+    id view = [[NSObject alloc] init];
 
-    [[NSObject alloc] init];
+    // [[NSObject alloc] init];
+
+    // int i = 1;
+    // if (i) {
+    // 	[[NSObject alloc] init];
+    // } else if (i) {
+    // 	[[NSObject alloc] init];
+    // }
+
+    if (view) {
+    	[[NSObject alloc] init];
+    } else if (view) {
+		[[NSObject alloc] init];
+    } else if (view) {
+    	[[NSObject alloc] init];
+    } else {
+    	[[NSObject alloc] init];
+    }
+
+    // if ([[NSObject alloc] init]) {
+
+    // }
 
 	// CGRect frame = CGRectMake(1,1,1,1);
 

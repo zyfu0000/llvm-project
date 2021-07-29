@@ -98,6 +98,7 @@ public:
         return true;
     }
     
+    // id a = xx;
     bool VisitVarDecl(VarDecl *varDecl)
     {
         OPCheckInvalid(varDecl)
@@ -112,6 +113,7 @@ public:
 
         OPVarDeclContext *context = new OPVarDeclContext;
         context->m_varName = varDecl->getNameAsString();
+        context->m_initContext = convertExprToOpContext(varDecl->getInit());
 
         m_currentContext->m_next = context;
         m_currentContext = context;
@@ -168,10 +170,54 @@ public:
             }
             
             return context;
-        }
-        else {
+        } else if (isa<ImplicitCastExpr>(expr)) {
+            ImplicitCastExpr *castExpr = (ImplicitCastExpr *)expr;
+            return convertExprToOpContext(castExpr->getSubExpr());
+        } else if (isa<DeclRefExpr>(expr)) {
+            DeclRefExpr *refExpr = (DeclRefExpr *)expr;
+            OPStringLiteralContext *context = new OPStringLiteralContext;
+            context->value = refExpr->getNameInfo().getName().getAsString();
             
+            return context;
         }
+        
+        return NULL;
+    }
+    
+    // if () {}
+    bool VisitIfStmt(IfStmt* stmt)
+    {
+        OPCheckInvalid(stmt)
+        
+        if (!isUserSourceDecl(stmt)) {
+            return true;
+        }
+        
+        OPIfStmtContext *context = new OPIfStmtContext;
+        context->m_condContext = convertExprToOpContext(stmt->getCond());
+        
+        m_currentContext->m_next = context;
+        m_currentContext = context;
+        
+        return true;
+    }
+    
+    // switch case
+    bool VisitSwitchStmt(SwitchStmt *stmt)
+    {
+        return true;
+    }
+    
+    // white () {}
+    bool VisitWhileStmt(WhileStmt *stmt)
+    {
+        return true;
+    }
+    
+    // do {} while()
+    bool VisitDoStmt(DoStmt *stmt)
+    {
+        return true;
     }
     
     bool VisitObjCSelectorExpr(ObjCSelectorExpr *expr)
@@ -304,7 +350,7 @@ private:
     OPImplementationDeclContext *m_currentImplContext = NULL;
     OPContext *m_currentContext = NULL;
     
-    vector<Expr *> m_parsedExpr;
+    vector<Stmt *> m_parsedExpr;
 };
 
 //AST 构造器

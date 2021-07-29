@@ -167,6 +167,37 @@ public:
     }
 };
 
+class OPIfStmtContext: public OPContext {
+public:
+    OPContext *m_condContext = NULL;
+    OPIfStmtContext *m_elseContext;
+    
+    string parse() {
+        string script = "";
+        
+        script += "if (";
+        script += m_condContext->parse();
+        script += ") {";
+        
+//        script += "}";
+        return script;
+    }
+};
+
+// string
+class OPStringLiteralContext: public OPContext {
+public:
+    string value;
+    
+    string parse() {
+        string script = "";
+        
+        script += value;
+        
+        return script;
+    }
+};
+
 // 345
 class OPIntegerLiteralContext: public OPContext {
 public:
