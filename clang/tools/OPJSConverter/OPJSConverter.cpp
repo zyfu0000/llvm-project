@@ -35,6 +35,10 @@ public:
     
     bool dataTraverseStmtPost(Stmt *S)
     {
+        if (!m_currentContext) {
+            return true;
+        }
+        
         if (!isUserSourceDecl(S)) {
             return true;
         }
@@ -44,7 +48,7 @@ public:
             while (!preContext->m_parent) {
                 preContext = preContext->m_pre;
                 if (!preContext) {
-                    cout << "preContext is nil" << endl;
+                    return true;
                 }
             }
             m_currentContext = preContext->m_parent;
@@ -226,8 +230,18 @@ public:
     
     bool VisitCompoundStmt(CompoundStmt *stmt)
     {
+        OPCheckInvalid(stmt)
+        
+        if (!isUserSourceDecl(stmt)) {
+            return true;
+        }
+        
+        if (!m_currentContext) {
+            return true;
+        }
+        
         if (isa<OPIfStmtContext>(m_currentContext)) {
-            OPContext *context = new OPContext;
+            OPCompoundStmtContext *context = new OPCompoundStmtContext;
             context->m_parent = m_currentContext;
             
             OPIfStmtContext *currentContext = (OPIfStmtContext *)m_currentContext;

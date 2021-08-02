@@ -10,6 +10,7 @@
 
 #include <iostream>
 #include <vector>
+#include "llvm/Support/Casting.h"
 
 using namespace std;
 
@@ -21,6 +22,26 @@ public:
 };
 
 class OPContext {
+public:
+    /// Discriminator for LLVM-style RTTI (dyn_cast<> et al.)
+    enum ContextKind {
+        ContextKind_MethodDecl,
+        ContextKind_ImplementationDecl,
+        ContextKind_VarDecl,
+        ContextKind_MessageExpr,
+        ContextKind_IfStmt,
+        ContextKind_StringLiteral,
+        ContextKind_IntegerLiteral,
+        ContextKind_FloatingLiteral,
+        ContextKind_CallExpr,
+        ContextKind_CompoundStmt,
+    };
+private:
+      const ContextKind Kind;
+public:
+    ContextKind getKind() const { return Kind; }
+    OPContext(ContextKind K): Kind(K) {}
+    
 public:
     OPContext *m_next = NULL;
     OPContext *m_pre = NULL;
@@ -46,6 +67,12 @@ public:
 // - (void)xxx{}
 // + (void)xxx{}
 class OPMethodDeclContext: public OPContext {
+public:
+    OPMethodDeclContext() : OPContext(ContextKind_MethodDecl) {}
+    static bool classof(const OPContext *S) {
+        return S->getKind() == ContextKind_MethodDecl;
+    }
+    
 public:
     string m_className;
     string m_methodName;
@@ -84,6 +111,12 @@ public:
 // @implementation xx
 class OPImplementationDeclContext: public OPContext {
 public:
+    OPImplementationDeclContext() : OPContext(ContextKind_ImplementationDecl) {}
+    static bool classof(const OPContext *S) {
+        return S->getKind() == ContextKind_ImplementationDecl;
+    }
+    
+public:
     string m_className;
     vector<OPMethodDeclContext *> m_methodContexts;
     
@@ -107,6 +140,12 @@ public:
 
 class OPVarDeclContext: public OPContext {
 public:
+    OPVarDeclContext() : OPContext(ContextKind_VarDecl) {}
+    static bool classof(const OPContext *S) {
+        return S->getKind() == ContextKind_VarDecl;
+    }
+    
+public:
     string m_varName;
     OPContext *m_initContext;
     
@@ -123,6 +162,12 @@ public:
 
 // [self a]
 class OPMessageExprContext: public OPContext {
+public:
+    OPMessageExprContext() : OPContext(ContextKind_MessageExpr) {}
+    static bool classof(const OPContext *S) {
+        return S->getKind() == ContextKind_MessageExpr;
+    }
+    
 public:
     bool m_isClassMethod = false;
     string m_className;
@@ -167,7 +212,21 @@ public:
     }
 };
 
+class OPCompoundStmtContext: public OPContext {
+public:
+    OPCompoundStmtContext() : OPContext(ContextKind_CompoundStmt) {}
+    static bool classof(const OPContext *S) {
+        return S->getKind() == ContextKind_CompoundStmt;
+    }
+};
+
 class OPIfStmtContext: public OPContext {
+public:
+    OPIfStmtContext() : OPContext(ContextKind_IfStmt) {}
+    static bool classof(const OPContext *S) {
+        return S->getKind() == ContextKind_IfStmt;
+    }
+    
 public:
     OPContext *m_condContext = NULL;
     OPContext *m_compContext = NULL;
@@ -196,6 +255,12 @@ public:
 // string
 class OPStringLiteralContext: public OPContext {
 public:
+    OPStringLiteralContext() : OPContext(ContextKind_StringLiteral) {}
+    static bool classof(const OPContext *S) {
+        return S->getKind() == ContextKind_StringLiteral;
+    }
+    
+public:
     string value;
     
     string parse() {
@@ -209,6 +274,11 @@ public:
 
 // 345
 class OPIntegerLiteralContext: public OPContext {
+public:
+    OPIntegerLiteralContext() : OPContext(ContextKind_IntegerLiteral) {}
+    static bool classof(const OPContext *S) {
+        return S->getKind() == ContextKind_IntegerLiteral;
+    }
 public:
     int64_t value;
     
@@ -224,6 +294,11 @@ public:
 // 3.45
 class OPFloatingLiteralContext: public OPContext {
 public:
+    OPFloatingLiteralContext() : OPContext(ContextKind_FloatingLiteral) {}
+    static bool classof(const OPContext *S) {
+        return S->getKind() == ContextKind_FloatingLiteral;
+    }
+public:
     float value;
     
     string parse() {
@@ -237,6 +312,11 @@ public:
 
 // a()
 class OPCallExprContext: public OPContext {
+public:
+    OPCallExprContext() : OPContext(ContextKind_CallExpr) {}
+    static bool classof(const OPContext *S) {
+        return S->getKind() == ContextKind_CallExpr;
+    }
 public:
     string m_funcName;
     vector<OPParam> m_fixParams;
