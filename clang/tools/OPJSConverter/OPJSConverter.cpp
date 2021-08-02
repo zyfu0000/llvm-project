@@ -33,6 +33,27 @@ class OPASTVisitor : public RecursiveASTVisitor<OPASTVisitor>
 public:
     explicit OPASTVisitor(CompilerInstance *aCI) : m_compilerInstance(aCI) {}
     
+    bool dataTraverseStmtPost(Stmt *S)
+    {
+        if (!isUserSourceDecl(S)) {
+            return true;
+        }
+        
+        if (isa<CompoundStmt>(S)) {
+            OPContext *preContext = m_currentContext;
+            while (!preContext->m_parent) {
+                preContext = preContext->m_pre;
+                if (!preContext) {
+                    cout << "preContext is nil" << endl;
+                }
+            }
+            m_currentContext = preContext->m_parent;
+            
+            return true;
+        }
+        return true;
+    }
+    
     // @implementation xx
     bool VisitObjCImplementationDecl(const ObjCImplementationDecl *implDecl)
     {
@@ -195,10 +216,29 @@ public:
         
         OPIfStmtContext *context = new OPIfStmtContext;
         context->m_condContext = convertExprToOpContext(stmt->getCond());
+        context->m_hasElse = stmt->hasElseStorage();
         
         m_currentContext->m_next = context;
         m_currentContext = context;
         
+        return true;
+    }
+    
+    bool VisitCompoundStmt(CompoundStmt *stmt)
+    {
+        if (isa<OPIfStmtContext>(m_currentContext)) {
+            OPContext *context = new OPContext;
+            context->m_parent = m_currentContext;
+            
+            OPIfStmtContext *currentContext = (OPIfStmtContext *)m_currentContext;
+            if (currentContext->m_compContext) {
+                currentContext->m_elseCompContext = context;
+            } else {
+                currentContext->m_compContext = context;
+            }
+            
+            m_currentContext = context;
+        }
         return true;
     }
     
@@ -313,13 +353,17 @@ public:
     //判断是否用户源码，过滤掉系统源码
     template <typename Node>
     bool isUserSourceDecl(const Node node) {
-        if(!node)return false;
+        if (!node) {
+            return false;
+        }
         string filename = sourcePathNode(node);
-        if (filename.empty())
+        if (filename.empty()) {
             return false;
+        }
         //非XCode中的源码都认为是用户源码
-        if(filename.find("/Applications/Xcode.app/") == 0)
+        if (filename.find("/Applications/Xcode.app/") == 0) {
             return false;
+        }
         return true;
     }
     

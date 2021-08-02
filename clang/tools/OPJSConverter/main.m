@@ -32,13 +32,14 @@
 
     if (view) {
     	[[NSObject alloc] init];
-    } else if (view) {
-		[[NSObject alloc] init];
-    } else if (view) {
-    	[[NSObject alloc] init];
-    } else {
-    	[[NSObject alloc] init];
-    }
+    } 
+  //   else if (view) {
+		// [[NSObject alloc] init];
+  //   } else if (view) {
+  //   	[[NSObject alloc] init];
+  //   } else {
+  //   	[[NSObject alloc] init];
+  //   }
 
     // if ([[NSObject alloc] init]) {
 

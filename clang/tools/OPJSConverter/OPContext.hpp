@@ -24,7 +24,7 @@ class OPContext {
 public:
     OPContext *m_next = NULL;
     OPContext *m_pre = NULL;
-    int m_currIdx;
+    OPContext *m_parent = NULL;
     
     virtual ~OPContext(){}
     
@@ -170,16 +170,25 @@ public:
 class OPIfStmtContext: public OPContext {
 public:
     OPContext *m_condContext = NULL;
-    OPIfStmtContext *m_elseContext;
+    OPContext *m_compContext = NULL;
+    OPContext *m_elseCompContext = NULL;
+    bool m_hasElse;
     
     string parse() {
         string script = "";
         
         script += "if (";
         script += m_condContext->parse();
-        script += ") {";
-        
-//        script += "}";
+        script += ") {\n";
+        script += m_compContext->parse();
+        script += "}\n";
+        if (m_elseCompContext) {
+            script += "else {\n";
+            script += m_elseCompContext->parse();
+            script += "}\n";
+        } else if (m_hasElse) {
+            script += "else ";
+        }
         return script;
     }
 };
