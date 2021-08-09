@@ -17,28 +17,28 @@
 - (void)a:(int)ccccc b:(int)dddd
 {}
 
-- (void)b __attribute__((annotate("reflect-class")))
+- (void)b __attribute__((annotate("0.0.2")))
 {
-    id view = [[NSObject alloc] init];
+    // id view = [[NSObject alloc] init];
 
     // [[NSObject alloc] init];
 
-    // int i = 1;
-    // if (i) {
-    // 	[[NSObject alloc] init];
-    // } else if (i) {
-    // 	[[NSObject alloc] init];
-    // }
-
-    if (view) {
+    int i = 1;
+    if (i) {
     	[[NSObject alloc] init];
-    } else if (view) {
-		[[NSObject alloc] init];
-    } else if (view) {
-    	[[NSObject alloc] init];
-    } else {
+    } else if (i) {
     	[[NSObject alloc] init];
     }
+
+  //   if ([[NSObject alloc] init]) {
+  //   	[[NSObject alloc] init];
+  //   } else if (view) {
+		// [[NSObject alloc] init];
+  //   } else if (view) {
+  //   	[[NSObject alloc] init];
+  //   } else {
+  //   	[[NSObject alloc] init];
+  //   }
 
     // if ([[NSObject alloc] init]) {
 

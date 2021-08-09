@@ -27,7 +27,6 @@ public:
     enum ContextKind {
         ContextKind_MethodDecl,
         ContextKind_ImplementationDecl,
-        ContextKind_VarDecl,
         ContextKind_MessageExpr,
         ContextKind_IfStmt,
         ContextKind_StringLiteral,
@@ -139,28 +138,6 @@ public:
     }
 };
 
-class OPVarDeclContext: public OPContext {
-public:
-    OPVarDeclContext() : OPContext(ContextKind_VarDecl) {}
-    static bool classof(const OPContext *S) {
-        return S->getKind() == ContextKind_VarDecl;
-    }
-    
-public:
-    string m_varName;
-    OPContext *m_initContext;
-    
-    string parse() {
-        string script = "var " + m_varName + " = ";
-        if (m_initContext) {
-            script += m_initContext->parse();
-        }
-        script += ';';
-        
-        return script;
-    }
-};
-
 // [self a]
 class OPMessageExprContext: public OPContext {
 public:
@@ -213,6 +190,7 @@ public:
     }
 };
 
+// {}
 class OPCompoundStmtContext: public OPContext {
 public:
     OPCompoundStmtContext() : OPContext(ContextKind_CompoundStmt) {}
@@ -231,6 +209,7 @@ public:
     }
 };
 
+// id a = x;
 class OPDeclStmtContext: public OPContext {
 public:
     OPDeclStmtContext() : OPContext(ContextKind_DeclStmt) {}
@@ -247,12 +226,13 @@ public:
         if (m_initContext) {
             script += m_initContext->parse();
         }
-        script += ";\n";
+        script += "\n";
         
         return script;
     }
 };
 
+// if ()
 class OPIfStmtContext: public OPContext {
 public:
     OPIfStmtContext() : OPContext(ContextKind_IfStmt) {}

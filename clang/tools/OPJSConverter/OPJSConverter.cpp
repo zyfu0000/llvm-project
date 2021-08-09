@@ -123,7 +123,7 @@ public:
         return true;
     }
     
-    // id a = xx;
+    // id a = xx; a
     bool VisitVarDecl(VarDecl *varDecl)
     {
         return true;
@@ -192,6 +192,7 @@ public:
         return NULL;
     }
     
+    // id a = xx;
     bool VisitDeclStmt(DeclStmt *stmt) {
         OPCheckInvalid(stmt)
 
@@ -238,6 +239,7 @@ public:
         return true;
     }
     
+    // {}
     bool VisitCompoundStmt(CompoundStmt *stmt)
     {
         OPCheckInvalid(stmt)
@@ -453,7 +455,7 @@ public:
     //源文件操作结束
     void EndSourceFileAction() override {
         //文件处理完成
-        cout << "【混淆】文件处理完成: " << this->consumer->script() << endl;
+        cout << "【混淆】文件处理完成: \n" << this->consumer->script() << endl;
     }
     
 private:
