@@ -126,23 +126,6 @@ public:
     // id a = xx;
     bool VisitVarDecl(VarDecl *varDecl)
     {
-        OPCheckInvalid(varDecl)
-
-        if (!m_currentContext) {
-            return true;
-        }
-        
-        if (!varDecl->isLocalVarDecl()) {
-            return true;
-        }
-
-        OPVarDeclContext *context = new OPVarDeclContext;
-        context->m_varName = varDecl->getNameAsString();
-        context->m_initContext = convertExprToOpContext(varDecl->getInit());
-
-        m_currentContext->m_next = context;
-        m_currentContext = context;
-
         return true;
     }
     
@@ -161,7 +144,7 @@ public:
         
         OPMessageExprContext *context = (OPMessageExprContext *)convertExprToOpContext(messageExpr);
         
-        m_currentContext->m_next = context;
+        m_currentContext->setNext(context);
         m_currentContext = context;
         
         return true;
@@ -181,8 +164,6 @@ public:
             } else {
                 Expr *receiverExpr = messageExpr->getInstanceReceiver();
                 context->m_receiverContext = convertExprToOpContext(receiverExpr);
-                
-                m_parsedExpr.push_back(receiverExpr);
             }
             std::string selName = messageExpr->getSelector().getAsString();
             convertToOPJSMethod(selName);
@@ -193,6 +174,8 @@ public:
                 const Expr *arg = messageExpr->getArg(i);
                 arg->getType();
             }
+            
+            m_parsedExpr.push_back(expr);
             
             return context;
         } else if (isa<ImplicitCastExpr>(expr)) {
@@ -209,6 +192,33 @@ public:
         return NULL;
     }
     
+    bool VisitDeclStmt(DeclStmt *stmt) {
+        OPCheckInvalid(stmt)
+
+        if (!m_currentContext) {
+            return true;
+        }
+        
+        if (!stmt->isSingleDecl()) {
+            return true;
+        }
+        
+        VarDecl *varDecl = (VarDecl *)stmt->getSingleDecl();
+        
+        if (!varDecl->isLocalVarDecl()) {
+            return true;
+        }
+
+        OPDeclStmtContext *context = new OPDeclStmtContext;
+        context->m_varName = varDecl->getNameAsString();
+        context->m_initContext = convertExprToOpContext(varDecl->getInit());
+
+        m_currentContext->setNext(context);
+        m_currentContext = context;
+
+        return true;
+    }
+    
     // if () {}
     bool VisitIfStmt(IfStmt* stmt)
     {
@@ -222,7 +232,7 @@ public:
         context->m_condContext = convertExprToOpContext(stmt->getCond());
         context->m_hasElse = stmt->hasElseStorage();
         
-        m_currentContext->m_next = context;
+        m_currentContext->setNext(context);
         m_currentContext = context;
         
         return true;

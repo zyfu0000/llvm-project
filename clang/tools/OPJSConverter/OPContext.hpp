@@ -35,6 +35,7 @@ public:
         ContextKind_FloatingLiteral,
         ContextKind_CallExpr,
         ContextKind_CompoundStmt,
+        ContextKind_DeclStmt,
     };
 private:
       const ContextKind Kind;
@@ -218,6 +219,38 @@ public:
     static bool classof(const OPContext *S) {
         return S->getKind() == ContextKind_CompoundStmt;
     }
+    
+    string parse() {
+        OPContext *ctx = this->m_next;
+        string script = "";
+        while (ctx) {
+            script += ctx->parse();
+            ctx = ctx->m_next;
+        }
+        return script;
+    }
+};
+
+class OPDeclStmtContext: public OPContext {
+public:
+    OPDeclStmtContext() : OPContext(ContextKind_DeclStmt) {}
+    static bool classof(const OPContext *S) {
+        return S->getKind() == ContextKind_DeclStmt;
+    }
+    
+public:
+    string m_varName;
+    OPContext *m_initContext;
+    
+    string parse() {
+        string script = "var " + m_varName + " = ";
+        if (m_initContext) {
+            script += m_initContext->parse();
+        }
+        script += ";\n";
+        
+        return script;
+    }
 };
 
 class OPIfStmtContext: public OPContext {
@@ -240,11 +273,11 @@ public:
         script += m_condContext->parse();
         script += ") {\n";
         script += m_compContext->parse();
-        script += "}\n";
+        script += "\n}\n";
         if (m_elseCompContext) {
             script += "else {\n";
             script += m_elseCompContext->parse();
-            script += "}\n";
+            script += "\n}\n";
         } else if (m_hasElse) {
             script += "else ";
         }
