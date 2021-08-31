@@ -162,8 +162,15 @@ public:
                 string className = objcInterfaceDecl->getNameAsString();
                 context->m_className = className;
             } else {
-                Expr *receiverExpr = messageExpr->getInstanceReceiver();
-                context->m_receiverContext = convertExprToOpContext(receiverExpr);
+                if (messageExpr->getReceiverKind() == ObjCMessageExpr::SuperClass || messageExpr->getReceiverKind() == ObjCMessageExpr::SuperInstance) {
+                    OPStringLiteralContext *stringContext = new OPStringLiteralContext;
+                    stringContext->value = "super";
+                    
+                    context->m_receiverContext = stringContext;
+                } else {
+                    Expr *receiverExpr = messageExpr->getInstanceReceiver();
+                    context->m_receiverContext = convertExprToOpContext(receiverExpr);
+                }
             }
             std::string selName = messageExpr->getSelector().getAsString();
             convertToOPJSMethod(selName);

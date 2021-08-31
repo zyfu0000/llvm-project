@@ -1,0 +1,1 @@
+clang -fmodules -fsyntax-only -Xclang -ast-dump  -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk main.m

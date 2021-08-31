@@ -1,56 +1,33 @@
+
 #import <Foundation/NSObjCRuntime.h>
 #import <Foundation/Foundation.h>
+#import <UIKit/UIKit.h>
 
-// extern void cfun(int, double);
+extern int add(int, int);
 
-// typedef struct AAA {
-// 	int a;
-// } AAA;
+@interface FCKViewController : UIViewController
 
-// typedef struct BBB {
-// 	AAA aaa;
-// 	int *btn;
-// } BBB;
+@end
 
 @implementation FCKViewController
 
-- (void)a:(int)ccccc b:(int)dddd
-{}
-
-- (void)b __attribute__((annotate("0.0.2")))
+- (void)viewDidLoad __attribute__((annotate("0.0.7.1")))
 {
-    // id view = [[NSObject alloc] init];
+    [super viewDidLoad];
 
-    // [[NSObject alloc] init];
-
-    int i = 1;
-    if (i) {
-    	[[NSObject alloc] init];
-    } else if (i) {
-    	[[NSObject alloc] init];
+    id object = [[NSObject alloc] init];
+    if (object) {
+        [self add:1 b:1];
+    } else {
+        NSLog(@"alloc error");
     }
+}
 
-  //   if ([[NSObject alloc] init]) {
-  //   	[[NSObject alloc] init];
-  //   } else if (view) {
-		// [[NSObject alloc] init];
-  //   } else if (view) {
-  //   	[[NSObject alloc] init];
-  //   } else {
-  //   	[[NSObject alloc] init];
-  //   }
+- (int)add:(int)a b:(int)b __attribute__((annotate("0.0.7.1")))
+{
+    int result = add(a, b);
 
-    // if ([[NSObject alloc] init]) {
-
-    // }
-
-	// CGRect frame = CGRectMake(1,1,1,1);
-
-	// id inst = self;
-	// [inst a:34534546758678678];
-	// NSString str = @"3456";
-	// NSLog(@"%@ %f", str, 456.8);
-	// cfun(987, 89.6);
+    return result;
 }
 
 @end
